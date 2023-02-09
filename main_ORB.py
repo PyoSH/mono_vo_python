@@ -54,6 +54,8 @@ def main():
 
     prev_image = None
 
+    dist_coef = np.array([-0.3682, 0.1786, 0, 0, 0])
+
     valid_ground_truth = False
     if dataset.ground_truth is not None:
         valid_ground_truth = True
@@ -61,17 +63,23 @@ def main():
     if dataset.camera_matrix is not None:
         camera_matrix = dataset.camera_matrix()
     else:
-        # camera_matrix = np.array([[718.8560, 0.0, 607.1928],
-        #                           [0.0, 718.8560, 185.2157],
-        #                           [0.0, 0.0, 1.0]])
-        camera_matrix = np.array([[320.1586, 0.0, 171.9961],
-                                  [0.0, 322.6917, 132.7315],
-                                  [0.0, 0.0, 1.0]])
+        if dataset.type == 'custom':
+            camera_matrix = np.array([[320.1586, 0.0, 171.9961],
+                                      [0.0, 322.6917, 132.7315],
+                                      [0.0, 0.0, 1.0]])
+        elif dataset.type == 'kitti':
+            camera_matrix = np.array([[718.8560, 0.0, 607.1928],
+                                      [0.0, 718.8560, 185.2157],
+                                      [0.0, 0.0, 1.0]])
+        
     
     for index in range(dataset.image_count):
         # load image
         image = cv2.imread(dataset.image_path_left(index))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        if dataset.type == 'custom':
+            image = cv2.undistort(image, camera_matrix, dist_coef)
 
         # main process
         keypoint, descriptor = feature_detector.detectAndCompute(image, None)
@@ -82,7 +90,7 @@ def main():
             continue
         
         
-        ### FAST ###
+        ### ORB ###
         tmp_keypoint=list(map(lambda x: [x.pt], prev_keypoint))
         points = np.array(tmp_keypoint,dtype=np.float32)
 
@@ -108,9 +116,11 @@ def main():
 
             scale = calc_euclid_dist(ground_truth_pos,
                                      previous_ground_truth_pos)
+            
 
         current_pos += current_rot.dot(t) * scale
         current_rot = R.dot(current_rot)
+        print('scale: ', scale)
 
         # get ground truth if eist.
         if valid_ground_truth:
