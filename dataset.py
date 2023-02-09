@@ -63,20 +63,21 @@ class Dataset():
 
 class KittiDataset(Dataset):
     def __init__(self, path):
+        self.type = 'kitti'
         self.image_format_left = '{:06d}.png'
         self.path = os.path.join(path, 'image_0')
         self.calibfile = os.path.join(path, 'calib.txt')
         sequence_count = os.path.dirname(self.path).split('/')[-1]
 
-        gt_path = os.path.join(self.path, '..', '..', '..',
-                               'poses', sequence_count + '.txt')
+        # gt_path = os.path.join(self.path, '..', '..', 'poses', sequence_count + '.txt')
+        gt_path = os.path.join('/home/burger/dataset', 'poses', sequence_count + '.txt')
 
         self.count_image()
         self.ground_truth = self.load_ground_truth_pose(gt_path)
         self.camera_matrix = self.load_camera_parameters(self.calibfile)
 
     def convert_text_to_ground_truth(self, gt_line):
-        matrix = np.array(gt_line.split(',')).reshape((3, 4)).astype(np.float32)
+        matrix = np.array(gt_line.split()).reshape((3, 4)).astype(np.float32)
         return matrix
 
     def load_camera_parameters(self, calibfile):
@@ -94,6 +95,7 @@ class KittiDataset(Dataset):
 
 class DAVISDataset(Dataset):
     def __init__(self, path):
+        self.type = 'custom'
         self.image_format_left = '{:06d}.png'
         self.path = os.path.join(path)
         self.calibfile = os.path.join(path,'..', 'calib.txt')
@@ -124,7 +126,7 @@ class DAVISDataset(Dataset):
 
 
 # dataset_dict = {'kitti': KittiDataset}
-dataset_dict = {'custom': DAVISDataset}
+dataset_dict = {'kitti': KittiDataset, 'custom': DAVISDataset}
 
 
 def create_dataset(options):
