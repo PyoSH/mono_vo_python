@@ -16,7 +16,7 @@ import math
 
 def parse_argument():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', default='kitti')
+    parser.add_argument('--dataset', default='custom')
     parser.add_argument('--path', required=True)
 
     return parser.parse_args()
@@ -31,8 +31,7 @@ def main():
     options = parse_argument()
     dataset = create_dataset(options)
 
-    feature_detector = cv2.FastFeatureDetector_create(threshold=25,
-                                                      nonmaxSuppression=True)
+    feature_detector = cv2.FastFeatureDetector_create(threshold=25, nonmaxSuppression=True)
 
     lk_params = dict(winSize=(21, 21),
                      criteria=(cv2.TERM_CRITERIA_EPS |
@@ -62,11 +61,14 @@ def main():
     if dataset.camera_matrix is not None:
         camera_matrix = dataset.camera_matrix()
     else:
-        camera_matrix = np.array([[718.8560, 0.0, 607.1928],
-                                  [0.0, 718.8560, 185.2157],
+        # camera_matrix = np.array([[718.8560, 0.0, 607.1928],
+        #                           [0.0, 718.8560, 185.2157],
+        #                           [0.0, 0.0, 1.0]])
+        camera_matrix = np.array([[320.1586, 0.0, 171.9961],
+                                  [0.0, 322.6917, 132.7315],
                                   [0.0, 0.0, 1.0]])
     
-    for index in xrange(dataset.image_count):
+    for index in range(dataset.image_count):
         # load image
         image = cv2.imread(dataset.image_path_left(index))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -78,9 +80,11 @@ def main():
             prev_image = image
             prev_keypoint = keypoint
             continue
-
-        points = np.array(map(lambda x: [x.pt], prev_keypoint),
-                          dtype=np.float32)
+        
+        
+        ### FAST ###
+        tmp_keypoint=list(map(lambda x: [x.pt], prev_keypoint))
+        points = np.array(tmp_keypoint,dtype=np.float32)
 
         p1, st, err = cv2.calcOpticalFlowPyrLK(prev_image,
                                                image, points,
@@ -128,10 +132,11 @@ def main():
         position_axes.scatter(current_pos[0][0], current_pos[2][0])
         plt.pause(.01)
 
-        img = cv2.drawKeypoints(image, keypoint, None)
+        img = cv2.drawKeypoints(image, keypoint, None)        
 
         # cv2.imshow('image', image)
         cv2.imshow('feature', img)
+        
         cv2.waitKey(1)
 
         prev_image = image
