@@ -60,7 +60,7 @@ class Dataset():
     def convert_text_to_ground_truth(self, gt_line):
         pass
 
-                
+
 class KittiDataset(Dataset):
     def __init__(self, path):
         self.image_format_left = '{:06d}.png'
@@ -76,7 +76,37 @@ class KittiDataset(Dataset):
         self.camera_matrix = self.load_camera_parameters(self.calibfile)
 
     def convert_text_to_ground_truth(self, gt_line):
-        matrix = np.array(gt_line.split()).reshape((3, 4)).astype(np.float32)
+        matrix = np.array(gt_line.split(',')).reshape((3, 4)).astype(np.float32)
+        return matrix
+
+    def load_camera_parameters(self, calibfile):
+        if not os.path.exists(calibfile):
+            print("camera parameter file path is not found.")
+            return None
+
+        with open(calibfile, 'r') as f:
+            line = f.readline()
+            part = line.split()
+            param = CameraParameters(float(part[1]), float(part[6]),
+                                     float(part[3]), float(part[7]))
+
+            return param
+
+class DAVISDataset(Dataset):
+    def __init__(self, path):
+        self.image_format_left = '{:06d}.png'
+        self.path = os.path.join(path)
+        self.calibfile = os.path.join(path,'..', 'calib.txt')
+        # sequence_count = os.path.dirname(self.path).split('/')[-1]
+
+        gt_path = os.path.join(self.path,'..', 'GT', 'fast_lio.txt')
+
+        self.count_image()
+        self.ground_truth = self.load_ground_truth_pose(gt_path)
+        self.camera_matrix = self.load_camera_parameters(self.calibfile)
+
+    def convert_text_to_ground_truth(self, gt_line):
+        matrix = np.array(gt_line.split(',')).reshape((3, 4)).astype(np.float32)
         return matrix
 
     def load_camera_parameters(self, calibfile):
@@ -93,7 +123,8 @@ class KittiDataset(Dataset):
             return param
 
 
-dataset_dict = {'kitti': KittiDataset}
+# dataset_dict = {'kitti': KittiDataset}
+dataset_dict = {'custom': DAVISDataset}
 
 
 def create_dataset(options):
